@@ -1,0 +1,13 @@
+---
+- name: Deploy monitoring stack
+  hosts: monitoring
+  become: true
+  gather_facts: true
+
+  vars:
+    monitoring_dir: /opt/monitoring
+    grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('admin', true) }}"
+
+  roles:
+    - docker
+    - monitoring

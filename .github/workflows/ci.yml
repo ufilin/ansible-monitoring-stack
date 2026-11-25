@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install yamllint ansible-core ansible-lint
+          ansible-galaxy collection install community.docker
+
+      - name: yamllint
+        run: yamllint .
+
+      - name: ansible-lint
+        run: ansible-lint ansible/playbook.yml
+
+      - name: promtool check rules
+        run: |
+          for f in prometheus/alerts/*.yml; do
+            docker run --rm -v "$PWD/$f:/rules.yml:ro" --entrypoint promtool \
+              prom/prometheus:v2.54.1 check rules /rules.yml
+          done
+
+      - name: docker compose config
+        run: docker compose config -q
